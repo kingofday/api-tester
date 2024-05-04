@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <style data-next-hide-fouc="true">
+        body {
+            box-sizing: border-box;
+            padding: 1rem;
+        }
+
+        form {
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #addr {
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            min-width: 350px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        textarea {
+            height: 250px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+    </style>
+    <noscript data-next-hide-fouc="true"></noscript>
+    <meta charSet="utf-8" />
+    <meta name="robots" content="index, follow" />
+    <meta http-equiv="Content-Language" content="fa" />
+    <meta property="og:locale" content="fa_IR" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Api Tester</title>
+    <meta name="title" content="Api Tester" />
+
+</head>
+
+<body>
+    <header>
+        <h1>Api Tester</h1>
+    </header>
+    <form class="form">
+        <div class="input-wrapper">
+            <select id="method">
+                <option value="get" selected="selected">Get</option>
+                <option value="post">Post</option>
+                <option value="delete">Delete</option>
+            </select>
+            <input id="addr" type="text" placeholder="Please Enter your api address" />
+            <select id="credentials">
+                <option value="include" selected="selected">Inclue</option>
+                <option value="omit">Omit</option>
+                <option value="same-origin">Same Origin</option>
+            </select>
+        </div>
+        <br />
+        <button id="btn-test" type="button" disabled>Test</button>
+        <br />
+        <label for="headers-control"><input type="checkbox" id="headers-control" name="headers-control" />Enable
+            headers</label>
+        <textarea id="headers" disabled="disabled">
+{
+   "Authorization":"Bearer ..."
+}
+        </textarea>
+        <br />
+        <label>Body</label>
+        <textarea id="body" disabled="disabled">
+{
+   "samle":"value"
+}
+        </textarea>
+        <br />
+        <p id="result">
+        </p>
+    </form>
+    </section>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function (event) {
+            const $btn = document.getElementById("btn-test");
+            const $method = document.getElementById("method");
+            const $input = document.getElementById("addr");
+            const $credentials = document.getElementById("credentials");
+            const $headerControl = document.getElementById("headers-control");
+            const $headers = document.getElementById("headers");
+            const $body = document.getElementById("body");
+            const savedAddr = localStorage.getItem("addr");
+            if (savedAddr) {
+                $btn.removeAttribute("disabled")
+                $input.value = savedAddr;
+            }
+            const savedHeaders = localStorage.getItem("headers");
+            if (savedHeaders) {
+                $headers.value = savedHeaders;
+            }
+            const savedBody = localStorage.getItem("body");
+            if (savedBody) {
+                $body.value = savedBody;
+            }
+            $btn.addEventListener("click", function () {
+
+                $btn.setAttribute("disabled", "disabled");
+                $btn.innerText += "...";
+                const addr = $input.value;
+                const headers = $headers.value;;
+                const body = $body.value;
+                const headersEnabled = $headerControl.checked;
+                const method = $method.value;
+                if (headersEnabled && headers)
+                    localStorage.setItem("headers", headers);
+                if (addr)
+                    localStorage.setItem("addr", addr);
+                if (body)
+                    localStorage.setItem("body", addr);
+                fetch(addr, {
+                    method: method,
+                    credentials: $credentials.value,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(headersEnabled && headers ? JSON.parse(headers) : {})
+                    },
+                    body: body && (method === "post" || method === "put") ? JSON.stringify(JSON.parse(body)) : undefined
+                }).then((res) => res.json())
+                    .then((data) => {
+                        document.getElementById("result").innerHTML = JSON.stringify(data);
+                        $btn.removeAttribute("disabled");
+                        $btn.innerText = $btn.innerText.replace("...", "");
+                    })
+                    .catch((err) => {
+                        $btn.removeAttribute("disabled");
+                        $btn.innerText = $btn.innerText.replace("...", "");
+                        alert(err?.message);
+                    });
+            });
+            $method.addEventListener("change", function (e) {
+                const value = e.target.value;
+                if (value === "post" || value === "put") {
+                    $body.removeAttribute("disabled")
+                }
+                else {
+                    $body.setAttribute("disabled", "disabled");
+                }
+            });
+            $input.addEventListener("input", function (e) {
+                const value = e.target.value;
+
+                if (!!value) {
+                    $btn.removeAttribute("disabled")
+                }
+                else {
+                    $btn.setAttribute("disabled", "disabled");
+                }
+            });
+            $headerControl.addEventListener("change", function (e) {
+                const value = e.target.checked;
+                if (!!value) {
+                    $headers.removeAttribute("disabled")
+                }
+                else {
+                    $headers.setAttribute("disabled", "disabled");
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>
